@@ -15,34 +15,15 @@ pub struct Request {
     method: Method,
 }
 
-// impl Request {
-//     fn from_byte_array(buf: &[u8]) -> Result<Self, String> {
-
-//     }
-// }
-
 impl TryFrom<&[u8]> for Request {
     type Error = ParseError;
 
     fn try_from(buf: &[u8]) -> Result<Self, Self::Error> {
-        // match str::from_utf8(buf) {
-        //     Ok(request) => {},
-        //     Err(_) => return Err(ParseError::InvalidEncoding),
-        // }
-        // match str::from_utf8(buf).or(Err(ParseError::InvalidEncoding)) {
-        //     Ok(req) => {},
-        //     Err(e) => return Err(e),
-        // }
-
-        // let request = str::from_utf8(buf).or(Err(ParseError::InvalidEncoding))?;
-        let request = str::from_utf8(buf)?;
-        // match get_next_word(request) {
-        //     Some((method, req)) => {},
-        //     None => return Err(ParseError::InvalidRequest)
-        // }
         
+        let request = str::from_utf8(buf)?;
+
         let (method, request) = get_next_word(request).ok_or(ParseError::InvalidRequest)?;
-        let (path, request) = get_next_word(request).ok_or(ParseError::InvalidRequest)?;
+        let (mut path, request) = get_next_word(request).ok_or(ParseError::InvalidRequest)?;
         let (protocol, _) = get_next_word(request).ok_or(ParseError::InvalidRequest)?;
 
         if protocol != "HTTP/1.1" {
@@ -50,6 +31,12 @@ impl TryFrom<&[u8]> for Request {
         }
 
         let method: Method = method.parse()?;
+
+        let mut query_string = None;
+        if let Some(i) = path.find('?') {
+            query_string = Some(&path[i + 1..]);
+            path = &path[..i];
+        }
 
         unimplemented!();
 
@@ -61,14 +48,6 @@ impl TryFrom<&[u8]> for Request {
 
 
 fn get_next_word(request: &str) -> Option<(&str, &str)> {
-    // let mut iter = request.chars();
-    // loop {
-    //     let item = iter.next();
-    //     match item {
-    //         Some(c) => {},
-    //         None => break,
-    //     }
-    // }
 
     for (i, c) in request.chars().enumerate() {
         if  c == ' ' || c == '\r' {
